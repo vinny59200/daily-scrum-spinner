@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Scrum People Spinner</title>
+  <style>
+    :root {
+      --blue-1: #3498db;
+      --blue-2: #4885ed;
+      --blue-3: #3399ff;
+      --light: #f5f5f5;
+      --gray: #707070;
+      --soft-gray: #c8c8c8;
+      --black: #000000;
+      --white: #ffffff;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+      --radius: 26px;
+
+      --page-text: var(--black);
+      --page-bg-base: var(--light);
+      --panel-bg: rgba(255, 255, 255, 0.92);
+      --panel-border: rgba(200, 200, 200, 0.9);
+      --field-bg: var(--light);
+      --field-text: var(--black);
+      --secondary-bg: var(--light);
+      --secondary-text: var(--black);
+      --wheel-bg: var(--white);
+      --wheel-ring: var(--black);
+      --hub-bg: linear-gradient(135deg, var(--black), #222);
+      --hub-text: var(--white);
+      --hub-border: var(--light);
+      --empty-bg: rgba(245, 245, 245, 0.8);
+      --modal-card-bg: var(--white);
+      --modal-overlay: rgba(0, 0, 0, 0.52);
+    }
+
+    body[data-theme="dark"] {
+      --page-text: var(--light);
+      --page-bg-base: var(--black);
+      --panel-bg: rgba(18, 24, 32, 0.94);
+      --panel-border: rgba(112, 112, 112, 0.72);
+      --field-bg: #050505;
+      --field-text: var(--light);
+      --secondary-bg: #111827;
+      --secondary-text: var(--light);
+      --wheel-bg: #101820;
+      --wheel-ring: var(--soft-gray);
+      --hub-bg: linear-gradient(135deg, var(--light), var(--soft-gray));
+      --hub-text: var(--black);
+      --hub-border: var(--gray);
+      --empty-bg: rgba(0, 0, 0, 0.55);
+      --modal-card-bg: #111827;
+      --modal-overlay: rgba(0, 0, 0, 0.74);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.48);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--page-text);
+      background:
+        radial-gradient(circle at top left, rgba(52, 152, 219, 0.28), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(72, 133, 237, 0.20), transparent 34%),
+        var(--page-bg-base);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .panel, .stage {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--blue-2);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--gray);
+      line-height: 1.5;
+      font-size: 0.98rem;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 850;
+      font-size: 0.95rem;
+    }
+
+    .count {
+      color: var(--gray);
+      font-weight: 750;
+      font-size: 0.85rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      resize: vertical;
+      border: 2px solid var(--soft-gray);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--field-bg);
+      color: var(--field-text);
+      font: 700 1rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    textarea:focus {
+      border-color: var(--blue-2);
+      box-shadow: 0 0 0 5px rgba(72, 133, 237, 0.14);
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--gray);
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .theme-toggle {
+      min-width: 170px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 18px;
+      padding: 15px 18px;
+      cursor: pointer;
+      font-weight: 950;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--blue-1), var(--blue-2));
+      box-shadow: 0 10px 24px rgba(52, 152, 219, 0.28);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(52, 152, 219, 0.34);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      filter: brightness(0.98);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    .secondary {
+      color: var(--secondary-text);
+      background: var(--secondary-bg);
+      border: 2px solid var(--soft-gray);
+      box-shadow: none;
+    }
+
+    .secondary:hover:not(:disabled) {
+      border-color: var(--blue-3);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+    }
+
+    .stage {
+      position: relative;
+      min-height: 680px;
+      padding: 28px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      width: 470px;
+      height: 470px;
+      border-radius: 50%;
+      background: rgba(72, 133, 237, 0.10);
+      filter: blur(6px);
+      transform: translate(160px, -150px);
+    }
+
+    .wheel-shell {
+      position: relative;
+      width: min(620px, 92vw);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 24px solid transparent;
+      border-right: 24px solid transparent;
+      border-top: 44px solid var(--black);
+      z-index: 4;
+      filter: drop-shadow(0 7px 4px rgba(0, 0, 0, 0.22));
+    }
+
+    .pointer::after {
+      content: "";
+      position: absolute;
+      left: -12px;
+      top: -40px;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 24px solid var(--blue-3);
+    }
+
+    canvas#wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--wheel-bg);
+      box-shadow:
+        inset 0 0 0 10px var(--black),
+        inset 0 0 0 17px var(--soft-gray),
+        0 26px 60px rgba(0, 0, 0, 0.22);
+    }
+
+    .hub {
+      position: absolute;
+      width: 128px;
+      height: 128px;
+      padding: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: var(--hub-bg);
+      color: var(--hub-text);
+      border: 8px solid var(--hub-border);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      font-weight: 1000;
+      letter-spacing: -0.04em;
+      z-index: 3;
+      user-select: none;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .hub:hover:not(:disabled) {
+      transform: scale(1.04);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+    }
+
+    .hub:active:not(:disabled) {
+      transform: scale(0.98);
+      filter: brightness(0.96);
+    }
+
+    .hub.is-disabled {
+      cursor: not-allowed;
+      opacity: 0.72;
+      transform: none;
+      filter: none;
+    }
+
+    .hub span {
+      display: block;
+      font-size: 1.45rem;
+      line-height: 0.95;
+    }
+
+    .empty-state {
+      position: absolute;
+      inset: 28px;
+      display: none;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      border: 2px dashed var(--soft-gray);
+      border-radius: 24px;
+      background: var(--empty-bg);
+      color: var(--gray);
+      font-weight: 850;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--modal-overlay);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+      animation: fadeIn 0.22s ease both;
+    }
+
+    .winner-card {
+      position: relative;
+      width: min(620px, 100%);
+      padding: 42px 28px 32px;
+      border-radius: 30px;
+      text-align: center;
+      background:
+        radial-gradient(circle at top, rgba(51, 153, 255, 0.20), transparent 32%),
+        var(--modal-card-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      animation: popIn 0.5s cubic-bezier(.18,1.35,.36,1) both;
+    }
+
+    .winner-card::before,
+    .winner-card::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(72, 133, 237, 0.12);
+      z-index: 0;
+    }
+
+    .winner-card::before {
+      top: -160px;
+      left: -80px;
+    }
+
+    .winner-card::after {
+      right: -120px;
+      bottom: -180px;
+      background: rgba(52, 152, 219, 0.14);
+    }
+
+    .winner-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .winner-kicker {
+      margin: 0 0 12px;
+      color: var(--blue-2);
+      font-size: 0.85rem;
+      font-weight: 1000;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .winner-name {
+      margin: 0;
+      font-size: clamp(3rem, 10vw, 6.6rem);
+      line-height: 0.9;
+      letter-spacing: -0.07em;
+      word-break: break-word;
+    }
+
+    .winner-note {
+      margin: 22px auto 0;
+      color: var(--gray);
+      font-size: 1.08rem;
+      font-weight: 700;
+      max-width: 430px;
+      line-height: 1.45;
+    }
+
+    .close-modal {
+      margin-top: 28px;
+      min-width: 170px;
+    }
+
+    .confetti-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .confetti {
+      position: absolute;
+      top: -20px;
+      width: 10px;
+      height: 18px;
+      border-radius: 3px;
+      opacity: 0;
+      animation: confettiFall var(--duration, 1200ms) ease-out forwards;
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.72) translateY(24px); opacity: 0; }
+      70% { transform: scale(1.04) translateY(-4px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    @keyframes confettiFall {
+      0% {
+        opacity: 1;
+        transform: translate3d(0, -20px, 0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(var(--drift, 40px), var(--fall, 420px), 0) rotate(var(--spin, 540deg));
+      }
+    }
+
+    @media (max-width: 960px) {
+      body {
+        padding: 18px;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: auto;
+      }
+
+      textarea {
+        min-height: 220px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .panel, .stage {
+        border-radius: 20px;
+      }
+
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+
+      .theme-toggle {
+        width: 100%;
+      }
+
+      .hub {
+        width: 96px;
+        height: 96px;
+        font-size: 0.8rem;
+      }
+
+      .hub span {
+        font-size: 1.15rem;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <main class="app">
+    <section class="panel" aria-label="Team members configuration">
+      <p class="eyebrow">Daily Scrum</p>
+      <h1>People Spinner</h1>
+      <p class="subtitle">One line per teammate. Keep this source list alphabetically ordered; the wheel itself starts shuffled and can be reshuffled independently.</p>
+
+      <div class="toolbar">
+        <button id="themeToggle" class="theme-toggle secondary" type="button" aria-pressed="false">🌙 Dark mode</button>
+      </div>
+
+      <div>
+        <label for="membersInput">
+          Team members
+          <span id="memberCount" class="count">0 members</span>
+        </label>
+        <textarea id="membersInput" spellcheck="false">👩‍💻 Alice
+🧑‍💻 Bruno
+👨‍💻 Camille
+👩‍🔧 Diana
+🧑‍🚀 Ethan
+👨‍🎨 Farid
+👩‍🔬 Inès
+🧑‍🎤 Julien</textarea>
+      </div>
+
+      <p class="hint">Tip: include an emoji and a name, for example <strong>🧑‍💻 Vincent</strong>. Editing this list rebuilds the wheel without sorting the text area.</p>
+
+      <div class="button-row">
+        <button id="spinButton" type="button">🎡 Spin</button>
+        <button id="shuffleButton" class="secondary" type="button">🔀 Shuffle wheel</button>
+      </div>
+    </section>
+
+    <section class="stage" aria-label="Spinner wheel">
+      <div class="wheel-shell">
+        <div class="pointer" aria-hidden="true"></div>
+        <canvas id="wheel" width="900" height="900" aria-label="People spinner wheel"></canvas>
+        <button id="hubButton" class="hub" type="button" aria-label="Spin the daily scrum wheel"><span>DAILY</span><span>SCRUM</span></button>
+      </div>
+      <div id="emptyState" class="empty-state">Add at least two team members to spin the wheel.</div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="winnerName">
+    <div class="winner-card">
+      <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
+      <div class="winner-content">
+        <p class="winner-kicker">Tomorrow’s daily scrum host is</p>
+        <h2 id="winnerName" class="winner-name">🎉</h2>
+        <p class="winner-note">Get ready to guide the team with style.</p>
+        <button id="closeModal" class="close-modal" type="button">Nice! ✨</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const themeColors = ["#3498db", "#4885ed", "#3399ff", "#f5f5f5", "#707070", "#c8c8c8"];
+      const textColors = ["#ffffff", "#ffffff", "#ffffff", "#000000", "#ffffff", "#000000"];
+      const confettiColors = ["#3498db", "#4885ed", "#3399ff", "#f5f5f5", "#707070", "#c8c8c8", "#000000"];
+
+      const textarea = document.getElementById("membersInput");
+      const memberCount = document.getElementById("memberCount");
+      const wheelCanvas = document.getElementById("wheel");
+      const ctx = wheelCanvas.getContext("2d");
+      const spinButton = document.getElementById("spinButton");
+      const hubButton = document.getElementById("hubButton");
+      const shuffleButton = document.getElementById("shuffleButton");
+      const themeToggle = document.getElementById("themeToggle");
+      const emptyState = document.getElementById("emptyState");
+      const modal = document.getElementById("modal");
+      const winnerName = document.getElementById("winnerName");
+      const closeModal = document.getElementById("closeModal");
+      const confettiLayer = document.getElementById("confettiLayer");
+
+      let orderedMembers = [];
+      let wheelMembers = [];
+      let rotation = Math.random() * Math.PI * 2;
+      let isSpinning = false;
+      let animationFrame = null;
+
+      const normalizeAngle = angle => ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const cssVar = name => getComputedStyle(document.body).getPropertyValue(name).trim();
+
+      function parseMembers() {
+        return textarea.value
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(Boolean);
+      }
+
+      function shuffleArray(input) {
+        const output = [...input];
+        for (let i = output.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [output[i], output[j]] = [output[j], output[i]];
+        }
+        return output;
+      }
+
+      function updateMemberCount() {
+        const count = orderedMembers.length;
+        memberCount.textContent = `${count} member${count === 1 ? "" : "s"}`;
+      }
+
+      function fitText(ctx, text, maxWidth, startSize, minSize) {
+        let size = startSize;
+        ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+        while (ctx.measureText(text).width > maxWidth && size > minSize) {
+          size -= 1;
+          ctx.font = `900 ${size}px Inter, Arial, sans-serif`;
+        }
+        return size;
+      }
+
+      function drawWheel() {
+        const width = wheelCanvas.width;
+        const height = wheelCanvas.height;
+        const center = width / 2;
+        const radius = width * 0.47;
+        const innerRadius = width * 0.115;
+        const textOuterRadius = width * 0.405;
+        const textMaxWidth = radius - innerRadius - 48;
+
+        ctx.clearRect(0, 0, width, height);
+
+        if (wheelMembers.length < 2) {
+          emptyState.style.display = "grid";
+          spinButton.disabled = true;
+          hubButton.disabled = true;
+          hubButton.classList.add("is-disabled");
+          shuffleButton.disabled = true;
+          ctx.save();
+          ctx.translate(center, center);
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.fillStyle = cssVar("--field-bg") || "#f5f5f5";
+          ctx.fill();
+          ctx.lineWidth = 8;
+          ctx.strokeStyle = cssVar("--soft-gray") || "#c8c8c8";
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+
+        emptyState.style.display = "none";
+        spinButton.disabled = isSpinning;
+        hubButton.disabled = isSpinning;
+        hubButton.classList.toggle("is-disabled", isSpinning);
+        shuffleButton.disabled = isSpinning;
+
+        const slice = (Math.PI * 2) / wheelMembers.length;
+
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(rotation);
+
+        for (let i = 0; i < wheelMembers.length; i++) {
+          const start = i * slice;
+          const end = start + slice;
+          const colorIndex = i % themeColors.length;
+
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, radius, start, end);
+          ctx.closePath();
+          ctx.fillStyle = themeColors[colorIndex];
+          ctx.fill();
+
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.22)";
+          ctx.stroke();
+
+          const middle = start + slice / 2;
+          ctx.save();
+          ctx.rotate(middle);
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = textColors[colorIndex];
+          ctx.shadowColor = colorIndex <= 2 ? "rgba(0,0,0,0.22)" : "rgba(255,255,255,0.3)";
+          ctx.shadowBlur = 2;
+          ctx.shadowOffsetY = 1;
+          fitText(ctx, wheelMembers[i], textMaxWidth, Math.min(40, Math.max(21, 280 / wheelMembers.length)), 15);
+          ctx.fillText(wheelMembers[i], textOuterRadius, 0);
+          ctx.restore();
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = cssVar("--wheel-ring") || "#000000";
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function rebuildWheel({ shouldShuffle = true } = {}) {
+        orderedMembers = parseMembers();
+        updateMemberCount();
+        if (shouldShuffle) {
+          wheelMembers = shuffleArray(orderedMembers);
+          rotation = Math.random() * Math.PI * 2;
+        } else {
+          const memberSet = new Set(orderedMembers);
+          wheelMembers = wheelMembers.filter(member => memberSet.has(member));
+          orderedMembers.forEach(member => {
+            if (!wheelMembers.includes(member)) wheelMembers.push(member);
+          });
+        }
+        drawWheel();
+      }
+
+      function selectedMember() {
+        if (wheelMembers.length === 0) return null;
+        const slice = (Math.PI * 2) / wheelMembers.length;
+        const pointerAngle = normalizeAngle(-Math.PI / 2 - rotation);
+        const index = Math.floor(pointerAngle / slice) % wheelMembers.length;
+        return wheelMembers[index];
+      }
+
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function spinWheel() {
+        if (isSpinning || wheelMembers.length < 2) return;
+
+        isSpinning = true;
+        spinButton.disabled = true;
+        hubButton.disabled = true;
+        hubButton.classList.add("is-disabled");
+        shuffleButton.disabled = true;
+
+        const startRotation = rotation;
+        const selectedIndex = Math.floor(Math.random() * wheelMembers.length);
+        const slice = (Math.PI * 2) / wheelMembers.length;
+        const sliceCenter = selectedIndex * slice + slice / 2;
+        const pointerAngle = -Math.PI / 2;
+        const targetBase = pointerAngle - sliceCenter;
+        const currentEquivalent = normalizeAngle(startRotation);
+        let targetEquivalent = normalizeAngle(targetBase);
+        let delta = targetEquivalent - currentEquivalent;
+        if (delta < 0) delta += Math.PI * 2;
+
+        const fullTurns = 6 + Math.floor(Math.random() * 4);
+        const targetRotation = startRotation + delta + fullTurns * Math.PI * 2;
+        const duration = 4200 + Math.random() * 1300;
+        const startTime = performance.now();
+
+        function animate(now) {
+          const progress = Math.min((now - startTime) / duration, 1);
+          rotation = startRotation + (targetRotation - startRotation) * easeOutCubic(progress);
+          drawWheel();
+
+          if (progress < 1) {
+            animationFrame = requestAnimationFrame(animate);
+          } else {
+            rotation = normalizeAngle(targetRotation);
+            isSpinning = false;
+            drawWheel();
+            const winner = selectedMember() || wheelMembers[selectedIndex];
+            openWinnerModal(winner);
+          }
+        }
+
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        animationFrame = requestAnimationFrame(animate);
+      }
+
+      function openWinnerModal(name) {
+        winnerName.textContent = name;
+        modal.classList.add("visible");
+        launchConfetti();
+        closeModal.focus({ preventScroll: true });
+      }
+
+      function closeWinnerModal() {
+        modal.classList.remove("visible");
+        confettiLayer.innerHTML = "";
+        spinButton.focus({ preventScroll: true });
+      }
+
+      function launchConfetti() {
+        confettiLayer.innerHTML = "";
+        const pieces = 96;
+        for (let i = 0; i < pieces; i++) {
+          const piece = document.createElement("span");
+          piece.className = "confetti";
+          piece.style.left = `${Math.random() * 100}%`;
+          piece.style.background = confettiColors[i % confettiColors.length];
+          piece.style.setProperty("--duration", `${900 + Math.random() * 1200}ms`);
+          piece.style.setProperty("--drift", `${-180 + Math.random() * 360}px`);
+          piece.style.setProperty("--fall", `${260 + Math.random() * 420}px`);
+          piece.style.setProperty("--spin", `${240 + Math.random() * 980}deg`);
+          piece.style.animationDelay = `${Math.random() * 220}ms`;
+          piece.style.transform = `rotate(${Math.random() * 180}deg)`;
+          if (Math.random() > 0.66) {
+            piece.style.borderRadius = "50%";
+            piece.style.width = "12px";
+            piece.style.height = "12px";
+          }
+          confettiLayer.appendChild(piece);
+        }
+      }
+
+      function setTheme(theme) {
+        const normalizedTheme = theme === "dark" ? "dark" : "light";
+        document.body.dataset.theme = normalizedTheme;
+        themeToggle.textContent = normalizedTheme === "dark" ? "☀️ Light mode" : "🌙 Dark mode";
+        themeToggle.setAttribute("aria-pressed", String(normalizedTheme === "dark"));
+        try {
+          localStorage.setItem("dailyScrumSpinnerTheme", normalizedTheme);
+        } catch (_) {
+          // Theme persistence is optional.
+        }
+        drawWheel();
+      }
+
+      function initialTheme() {
+        try {
+          const saved = localStorage.getItem("dailyScrumSpinnerTheme");
+          if (saved === "dark" || saved === "light") return saved;
+        } catch (_) {
+          // Ignore storage access issues.
+        }
+        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+
+      textarea.addEventListener("input", () => rebuildWheel({ shouldShuffle: true }));
+      spinButton.addEventListener("click", spinWheel);
+      hubButton.addEventListener("click", spinWheel);
+      themeToggle.addEventListener("click", () => {
+        setTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+      });
+      shuffleButton.addEventListener("click", () => {
+        if (isSpinning) return;
+        wheelMembers = shuffleArray(parseMembers());
+        rotation = Math.random() * Math.PI * 2;
+        drawWheel();
+      });
+      closeModal.addEventListener("click", closeWinnerModal);
+      modal.addEventListener("click", event => {
+        if (event.target === modal) closeWinnerModal();
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modal.classList.contains("visible")) {
+          closeWinnerModal();
+        }
+      });
+
+      setTheme(initialTheme());
+      rebuildWheel({ shouldShuffle: true });
+    })();
+  </script>
+</body>
+</html>
