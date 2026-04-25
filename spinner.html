@@ -4,6 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Scrum People Spinner</title>
+  <script>
+    // TODO: change team members here.
+    // Keep one teammate per line, exactly like in the textarea.
+    // You can copy this whole multiline list and paste it directly into the textarea,
+    // or copy a list from another online spinner textarea and paste it here.
+    window.DEFAULT_TEAM_MEMBERS = `
+👩‍💻 Alice
+🧑‍💻 Bruno
+👨‍💻 Camille
+👩‍🔧 Diana
+🧑‍🚀 Ethan
+👨‍🎨 Farid
+👩‍🔬 Inès
+🧑‍🎤 Julien
+`.trim();
+  </script>
   <style>
     :root {
       --blue-1: #3498db;
@@ -626,20 +642,13 @@
         </label>
         <div class="member-editor">
           <div class="textarea-delete-wrapper">
-            <textarea id="membersInput" spellcheck="false" wrap="off">👩‍💻 Alice
-🧑‍💻 Bruno
-👨‍💻 Camille
-👩‍🔧 Diana
-🧑‍🚀 Ethan
-👨‍🎨 Farid
-👩‍🔬 Inès
-🧑‍🎤 Julien</textarea>
+            <textarea id="membersInput" spellcheck="false" wrap="off" aria-describedby="membersHint"></textarea>
             <div id="absenceList" class="delete-column" aria-label="Absent team members controls"></div>
           </div>
         </div>
       </div>
 
-      <p class="hint">Tip: click the <strong>❌</strong> at the right end of a line to remove that member from the source list and from the wheel.</p>
+      <p id="membersHint" class="hint">Tip: click the <strong>❌</strong> at the right end of a line to remove that member from the source list and from the wheel.</p>
 
       <div class="button-row">
         <button id="spinButton" type="button">🎡 Spin</button>
@@ -702,6 +711,36 @@
 
       const normalizeAngle = angle => ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const cssVar = name => getComputedStyle(document.body).getPropertyValue(name).trim();
+
+      function configuredMembersText() {
+        const configuredMembers = window.DEFAULT_TEAM_MEMBERS;
+
+        if (typeof configuredMembers === "string") {
+          return configuredMembers
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean)
+            .join("\n");
+        }
+
+        // Backward compatibility, in case someone still uses the previous object-array format.
+        if (Array.isArray(configuredMembers)) {
+          return configuredMembers
+            .map(member => {
+              if (typeof member === "string") return member.trim();
+              if (!member || typeof member !== "object") return "";
+              return `${member.emoji || ""} ${member.name || ""}`.trim();
+            })
+            .filter(Boolean)
+            .join("\n");
+        }
+
+        return "";
+      }
+
+      function loadConfiguredMembersIntoTextarea() {
+        textarea.value = configuredMembersText();
+      }
 
       function rawMemberLines() {
         return textarea.value.split(/\r?\n/);
@@ -1033,6 +1072,7 @@
         }
       });
 
+      loadConfiguredMembersIntoTextarea();
       setTheme(initialTheme());
       rebuildWheel({ shouldShuffle: true });
     })();
